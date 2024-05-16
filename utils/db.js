@@ -11,7 +11,6 @@ class DBClient {
     MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
       if (!err) {
         this.db = client.db(DB_DATABASE);
-        this.files = this.db.collection('files');
       } else {
         console.log(err.message);
         this.db = false;
