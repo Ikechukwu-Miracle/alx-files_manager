@@ -1,54 +1,41 @@
+import { MongoClient } from 'mongodb';
+// const { MongoClient } = require('mongodb');
+
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_PORT = process.env.DB_PORT || 27017;
+const DB_DATABASE = process.env.DB_DATABASE || 'files_manager';
+const url = `mongodb://${DB_HOST}:${DB_PORT}`;
+
 class DBClient {
-    constructor() {
-        const host = process.env.DB_HOST || 'localhost';
-        const port = process.env.DB_PORT || 27017;
-        const database = process.env.DB_DATABASE || 'files_manager';
-        const url = `mongodb://${host}:${port}/${database}`;
+  constructor() {
+    MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
+      if (!err) {
+        this.db = client.db(DB_DATABASE);
+        this.files = this.db.collection('files');
+      } else {
+        console.log(err.message);
+        this.db = false;
+      }
+    });
+  }
 
-        this.client = new MongoClient(url, { useUnifiedTopology: true });
-        this.db = null;
+  isAlive() {
+    return !!this.db;
+  }
 
-        this.connect();
-    }
+  async nbUsers() {
+    return this.db.collection('users').countDocuments();
+  }
 
-    async connect() {
-        try {
-            await this.client.connect();
-            this.db = this.client.db();
-            console.log('Connected to MongoDB');
-        } catch (error) {
-            console.error('Error connecting to MongoDB:', error);
-            throw error; // Rethrow the error to be handled in the calling code
-        }
-    }
+  async nbFiles() {
+    return this.db.collection('files').countDocuments();
+  }
 
-    isAlive() {
-        return this.client.isConnected();
-    }
-
-    async nbUsers() {
-        try {
-            const collection = this.db.collection('users');
-            const count = await collection.countDocuments();
-            return count;
-        } catch (error) {
-            console.error('Error counting users:', error);
-            throw error;
-        }
-    }
-
-    async nbFiles() {
-        try {
-            const collection = this.db.collection('files');
-            const count = await collection.countDocuments();
-            return count;
-        } catch (error) {
-            console.error('Error counting files:', error);
-            throw error;
-        }
-    }
+  async getUser(query) {
+    const user = await this.db.collection('users').findOne(query);
+    return user;
+  }
 }
 
 const dbClient = new DBClient();
-
-export default dbClient;
+module.exports = dbClient;
